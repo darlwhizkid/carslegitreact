@@ -75,7 +75,6 @@ const Navbar = () => {
                 </DropdownMenu>
               )}
             </DropdownContainer>
-            <NavLink href="#contact">Contact Us</NavLink>
             <NavLink href="#track">Track Application</NavLink>
             <NavLink href="#faq">FAQ</NavLink>
           </NavLinks>
@@ -127,7 +126,6 @@ const Navbar = () => {
                 </MobileDropdownMenu>
               )}
             </MobileDropdownContainer>
-            <MobileNavLink href="#contact">Contact Us</MobileNavLink>
             <MobileNavLink href="#track">Track Application</MobileNavLink>
             <MobileNavLink href="#faq">FAQ</MobileNavLink>
             {isAuthenticated ? (
