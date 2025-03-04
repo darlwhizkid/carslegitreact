@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { FaCaretDown } from 'react-icons/fa';
@@ -12,9 +12,22 @@ const Navbar = () => {
   const [showMobileDropdown, setShowMobileDropdown] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
-  
+  const [username, setUsername] = useState('');
   const isAuthenticated = localStorage.getItem('isAuthenticated');
-  const username = 'Darlculus';
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    if (user) {
+      setUsername(user.name);
+    }
+  }, [localStorage.getItem('currentUser')]);
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    if (user) {
+      setUsername(user.name);
+    }
+  }, [localStorage.getItem('currentUser')]);
 
   const handleLogout = () => {
     localStorage.removeItem('isAuthenticated');

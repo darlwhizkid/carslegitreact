@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { FaEnvelope, FaLock, FaUser, FaPhone, FaTimes, FaGoogle, FaFacebookF, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { register, login } from '../services/api';
 
 const AuthModal = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
@@ -10,27 +11,36 @@ const AuthModal = ({ isOpen, onClose }) => {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loginData, setLoginData] = useState({
+  const [formData, setFormData] = useState({
+    name: '',
     email: '',
     password: ''
   });
+  const [error, setError] = useState('');
 
-  const handleLogin = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    const validCredentials = {
-      email: 'demo@carslegit.com',
-      password: 'demo123'
-    };
+    try {
+      const response = activeTab === 'login'
+        ? await login({ email: formData.email, password: formData.password })
+        : await register(formData);
 
-    if (loginData.email === validCredentials.email && 
-        loginData.password === validCredentials.password) {
       localStorage.setItem('isAuthenticated', 'true');
+      localStorage.setItem('currentUser', JSON.stringify(response.user));
+      localStorage.setItem('token', response.token);
+      
       onClose();
       navigate('/dashboard');
-    } else {
-      alert('Invalid credentials! Use demo@carslegit.com / demo123');
+    } catch (error) {
+      setError(error.message);
     }
+  };
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
 
   const ForgotPasswordForm = () => (
@@ -74,19 +84,23 @@ const AuthModal = ({ isOpen, onClose }) => {
           </TabContainer>
         )}
 
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+
         {showForgotPassword ? (
           <ForgotPasswordForm />
         ) : activeTab === 'login' ? (
-          <Form onSubmit={handleLogin}>
+          <Form onSubmit={handleSubmit}>
             <InputGroup>
               <InputIcon>
                 <FaEnvelope />
               </InputIcon>
               <Input 
                 type="email" 
+                name="email"
                 placeholder="Email Address"
-                value={loginData.email}
-                onChange={(e) => setLoginData({...loginData, email: e.target.value})}
+                value={formData.email}
+                onChange={handleChange}
+                required
               />
             </InputGroup>
             <InputGroup>
@@ -95,9 +109,11 @@ const AuthModal = ({ isOpen, onClose }) => {
               </InputIcon>
               <Input 
                 type={showLoginPassword ? "text" : "password"}
+                name="password"
                 placeholder="Password"
-                value={loginData.password}
-                onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                value={formData.password}
+                onChange={handleChange}
+                required
               />
               <PasswordToggle 
                 type="button"
@@ -129,24 +145,32 @@ const AuthModal = ({ isOpen, onClose }) => {
             </SocialButtons>
           </Form>
         ) : (
-          <Form>
+          <Form onSubmit={handleSubmit}>
             <InputGroup>
               <InputIcon>
                 <FaUser />
               </InputIcon>
-              <Input type="text" placeholder="Full Name" />
+              <Input 
+                type="text" 
+                name="name"
+                placeholder="Full Name"
+                value={formData.name}
+                onChange={handleChange}
+                required
+              />
             </InputGroup>
             <InputGroup>
               <InputIcon>
                 <FaEnvelope />
               </InputIcon>
-              <Input type="email" placeholder="Email Address" />
-            </InputGroup>
-            <InputGroup>
-              <InputIcon>
-                <FaPhone />
-              </InputIcon>
-              <Input type="tel" placeholder="Phone Number" />
+              <Input 
+                type="email" 
+                name="email"
+                placeholder="Email Address"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
             </InputGroup>
             <InputGroup>
               <InputIcon>
@@ -154,7 +178,11 @@ const AuthModal = ({ isOpen, onClose }) => {
               </InputIcon>
               <Input 
                 type={showRegisterPassword ? "text" : "password"}
+                name="password"
                 placeholder="Password"
+                value={formData.password}
+                onChange={handleChange}
+                required
               />
               <PasswordToggle 
                 type="button"
@@ -163,22 +191,7 @@ const AuthModal = ({ isOpen, onClose }) => {
                 {showRegisterPassword ? <FaEyeSlash /> : <FaEye />}
               </PasswordToggle>
             </InputGroup>
-            <InputGroup>
-              <InputIcon>
-                <FaLock />
-              </InputIcon>
-              <Input 
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="Confirm Password"
-              />
-              <PasswordToggle 
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              >
-                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-              </PasswordToggle>
-            </InputGroup>
-            <SubmitButton>Register</SubmitButton>
+            <SubmitButton type="submit">Register</SubmitButton>
           </Form>
         )}
       </ModalContent>
@@ -425,6 +438,15 @@ const SocialButton = styled.button`
   &:hover {
     opacity: 0.9;
   }
+`;
+
+const ErrorMessage = styled.div`
+    color: #dc3545;
+    background: #ffe6e6;
+    padding: 0.5rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    text-align: center;
 `;
 
 export default AuthModal;

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import NewVehicleModal from './NewVehicleModal';
 import { FaCar, FaFile, FaClock, FaExclamationCircle, FaArrowUp, FaTruck, FaSearch, FaFilter } from 'react-icons/fa';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import NewVehicleModal from './NewVehicleModal';
 
 const vehicleData = [
   { name: 'Jan', vehicles: 4 },
@@ -21,15 +21,54 @@ const pieData = [
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28'];
 
+function DashboardMain() {
+    const [vehicles, setVehicles] = useState([]);
+    const [userName, setUserName] = useState('');
+    const [showScrollButton, setShowScrollButton] = useState(false);
+    const [isCarIcon, setIsCarIcon] = useState(false);
+    const [isNewVehicleModalOpen, setIsNewVehicleModalOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedFilter, setSelectedFilter] = useState('all');
+    const [stats, setStats] = useState({
+        totalVehicles: 0,
+        activeApplications: 0,
+        pendingOrders: 0
+    });
 
-const DashboardMain = () => {
-  const [showScrollButton, setShowScrollButton] = useState(false);
-  const [isCarIcon, setIsCarIcon] = useState(false);
-  const [isNewVehicleModalOpen, setIsNewVehicleModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState('all');
+    useEffect(() => {
+        // Update stats based on vehicles array
+        setStats({
+            totalVehicles: vehicles.length,
+            activeApplications: vehicles.filter(v => v.registrationStatus === 'pending').length,
+            pendingOrders: vehicles.filter(v => v.registrationStatus === 'expired').length
+        });
+    }, [vehicles]);
 
-  React.useEffect(() => {
+    useEffect(() => {
+        const fetchUserData = async () => {
+            const user = JSON.parse(localStorage.getItem('currentUser'));
+            if (user) {
+                setUserName(user.name);
+            }
+            
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch('http://localhost:5000/api/vehicles', {
+                    headers: {
+                        'x-auth-token': token
+                    }
+                });
+                const data = await response.json();
+                setVehicles(data);
+            } catch (error) {
+                console.error('Error fetching vehicles:', error);
+            }
+        };
+        
+        fetchUserData();
+    }, []);
+
+  useEffect(() => {
     const handleScroll = () => {
       setShowScrollButton(window.pageYOffset > 300);
     };
@@ -38,58 +77,56 @@ const DashboardMain = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleScrollTop = () => {
-    setIsCarIcon(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    setTimeout(() => setIsCarIcon(false), 1000);
-  };
+    const handleScrollTop = () => {
+      setIsCarIcon(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => setIsCarIcon(false), 1000);
+    };
 
-
-  return (
-    <MainContent>
-      <ContentHeader>
-        <HeaderTop>
-          <h1>Dashboard Overview</h1>
-          <SearchContainer>
-            <SearchInput
-              type="text"
-              placeholder="Search vehicles..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <SearchIcon>
-              <FaSearch />
-            </SearchIcon>
-          </SearchContainer>
-        </HeaderTop>
-        <FilterContainer>
-          <FilterButton 
-            active={selectedFilter === 'all'} 
-            onClick={() => setSelectedFilter('all')}
-          >
-            All Vehicles
-          </FilterButton>
-          <FilterButton 
-            active={selectedFilter === 'active'} 
-            onClick={() => setSelectedFilter('active')}
-          >
-            Active
-          </FilterButton>
-          <FilterButton 
-            active={selectedFilter === 'pending'} 
-            onClick={() => setSelectedFilter('pending')}
-          >
-            Pending Renewal
-          </FilterButton>
-          <FilterButton 
-            active={selectedFilter === 'expired'} 
-            onClick={() => setSelectedFilter('expired')}
-          >
-            Expired
-          </FilterButton>
-        </FilterContainer>
-      </ContentHeader>
-
+    return (
+      <MainContent>
+        <ContentHeader>
+          <HeaderTop>
+            <h1>Hello {userName}!</h1>
+            <SearchContainer>
+              <SearchInput
+                type="text"
+                placeholder="Search vehicles..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <SearchIcon>
+                <FaSearch />
+              </SearchIcon>
+            </SearchContainer>
+          </HeaderTop>
+          <FilterContainer>
+            <FilterButton 
+              active={selectedFilter === 'all'} 
+              onClick={() => setSelectedFilter('all')}
+            >
+              All Vehicles
+            </FilterButton>
+            <FilterButton 
+              active={selectedFilter === 'active'} 
+              onClick={() => setSelectedFilter('active')}
+            >
+              Active
+            </FilterButton>
+            <FilterButton 
+              active={selectedFilter === 'pending'} 
+              onClick={() => setSelectedFilter('pending')}
+            >
+              Pending Renewal
+            </FilterButton>
+            <FilterButton 
+              active={selectedFilter === 'expired'} 
+              onClick={() => setSelectedFilter('expired')}
+            >
+              Expired
+            </FilterButton>
+          </FilterContainer>
+        </ContentHeader>
       <QuickActions>
         <ActionButton onClick={() => setIsNewVehicleModalOpen(true)}>
           <FaCar /> New Vehicle
@@ -101,58 +138,56 @@ const DashboardMain = () => {
           <FaClock /> Renewal Reminder
         </ActionButton>
       </QuickActions>
-
-      <ContentGrid>
-        <StatCard>
-          <StatIcon className="vehicles">
-            <FaCar />
-          </StatIcon>
-          <StatInfo>
-            <h3>Total Vehicles</h3>
-            <p className="number">2</p>
-            <StatTrend positive>
-              +12.5% from last month
-            </StatTrend>
-          </StatInfo>
-        </StatCard>
-        <StatCard>
-          <StatIcon className="applications">
-            <FaFile />
-          </StatIcon>
-          <StatInfo>
-            <h3>Applications</h3>
-            <p className="number">0</p>
-            <StatTrend>
-              No change
-            </StatTrend>
-          </StatInfo>
-        </StatCard>
-        <StatCard>
-          <StatIcon className="orders">
-            <FaClock />
-          </StatIcon>
-          <StatInfo>
-            <h3>Pending Orders</h3>
-            <p className="number">0</p>
-            <StatTrend>
-              No change
-            </StatTrend>
-          </StatInfo>
-        </StatCard>
-        <StatCard>
-          <StatIcon className="products">
-            <FaFilter />
-          </StatIcon>
-          <StatInfo>
-            <h3>Available Products</h3>
-            <p className="number">456</p>
-            <StatTrend positive>
-              +25% from last month
-            </StatTrend>
-          </StatInfo>
-        </StatCard>
-      </ContentGrid>
-
+        <ContentGrid>
+          <StatCard>
+            <StatIcon className="vehicles">
+              <FaCar />
+            </StatIcon>
+            <StatInfo>
+              <h3>Total Vehicles</h3>
+              <p className="number">{vehicles.length}</p>
+              <StatTrend positive>
+                Active Vehicles
+              </StatTrend>
+            </StatInfo>
+          </StatCard>
+          <StatCard>
+            <StatIcon className="applications">
+              <FaFile />
+            </StatIcon>
+            <StatInfo>
+              <h3>Applications</h3>
+              <p className="number">{vehicles.filter(v => v.registrationStatus === 'pending').length}</p>
+              <StatTrend>
+                Pending Applications
+              </StatTrend>
+            </StatInfo>
+          </StatCard>
+          <StatCard>
+            <StatIcon className="orders">
+              <FaClock />
+            </StatIcon>
+            <StatInfo>
+              <h3>Pending Orders</h3>
+              <p className="number">{vehicles.filter(v => v.registrationStatus === 'expired').length}</p>
+              <StatTrend>
+                Require Attention
+              </StatTrend>
+            </StatInfo>
+          </StatCard>
+          <StatCard>
+            <StatIcon className="products">
+              <FaFilter />
+            </StatIcon>
+            <StatInfo>
+              <h3>Active Registrations</h3>
+              <p className="number">{vehicles.filter(v => v.registrationStatus === 'active').length}</p>
+              <StatTrend positive>
+                Current Status
+              </StatTrend>
+            </StatInfo>
+          </StatCard>
+        </ContentGrid>
       <ChartSection>
         <ChartGrid>
           <ChartCard>
@@ -218,83 +253,80 @@ const DashboardMain = () => {
               <ViewAllButton>View All</ViewAllButton>
             </SectionHeader>
             <VehiclesContainer>
-              <VehicleCard>
-                <VehicleIcon>
-                  <FaCar />
-                </VehicleIcon>
-                <VehicleInfo>
-                  <h4>Toyota Camry 2020</h4>
-                  <Status className="active">Registration Active</Status>
-                  <p>Expires in 245 days</p>
-                </VehicleInfo>
-                <VehicleActions>
-                  <ActionDot />
-                  <ActionDot />
-                  <ActionDot />
-                </VehicleActions>
-              </VehicleCard>
-              <VehicleCard>
-                <VehicleIcon>
-                  <FaTruck />
-                </VehicleIcon>
-                <VehicleInfo>
-                  <h4>Ford F-150 2022</h4>
-                  <Status className="pending">Renewal Needed</Status>
-                  <p>Expires in 15 days</p>
-                </VehicleInfo>
-                <VehicleActions>
-                  <ActionDot />
-                  <ActionDot />
-                  <ActionDot />
-                </VehicleActions>
-              </VehicleCard>
+              {vehicles.map(vehicle => (
+                <VehicleCard key={vehicle._id}>
+                  <VehicleIcon>
+                    <FaCar />
+                  </VehicleIcon>
+                  <VehicleInfo>
+                    <h4>{vehicle.make} {vehicle.model} {vehicle.year}</h4>
+                    <Status className={vehicle.registrationStatus}>{vehicle.registrationStatus}</Status>
+                    <p>Registration: {vehicle.registrationNumber}</p>
+                  </VehicleInfo>
+                </VehicleCard>
+              ))}
             </VehiclesContainer>
           </VehicleStatus>
-
-          <ActivitiesTimeline>
-            <SectionHeader>
+        <ActivitiesTimeline>
+          <SectionHeader>
               <h3>Recent Activities</h3>
               <ViewAllButton>View All</ViewAllButton>
-            </SectionHeader>
-            <TimelineContainer>
-              <TimelineItem>
-                <TimelineDot />
-                <TimelineContent>
-                  <TimeStamp>2 hours ago</TimeStamp>
-                  <p>Vehicle registration completed for Toyota Camry</p>
-                </TimelineContent>
-              </TimelineItem>
-              <TimelineItem>
-                <TimelineDot />
-                <TimelineContent>
-                  <TimeStamp>Yesterday</TimeStamp>
-                  <p>License renewal application submitted</p>
-                </TimelineContent>
-              </TimelineItem>
-            </TimelineContainer>
-          </ActivitiesTimeline>
-        </DashboardColumn>
+          </SectionHeader>
+          <TimelineContainer>
+              {vehicles.length > 0 ? (
+                  vehicles.map(vehicle => (
+                      <TimelineItem key={vehicle._id}>
+                          <TimelineDot />
+                          <TimelineContent>
+                              <TimeStamp>New Vehicle Added</TimeStamp>
+                              <p>{vehicle.make} {vehicle.model} registration initiated</p>
+                          </TimelineContent>
+                      </TimelineItem>
+                  ))
+              ) : (
+                  <TimelineItem>
+                      <TimelineDot />
+                      <TimelineContent>
+                          <TimeStamp>Welcome!</TimeStamp>
+                          <p>Add your first vehicle to get started</p>
+                      </TimelineContent>
+                  </TimelineItem>
+              )}
+          </TimelineContainer>
+        </ActivitiesTimeline>
+      </DashboardColumn>
 
-        <DashboardColumn>
-          <RenewalAlerts>
-            <SectionHeader>
+      <DashboardColumn>
+        <RenewalAlerts>
+          <SectionHeader>
               <h3>Upcoming Renewals</h3>
               <ViewAllButton>View All</ViewAllButton>
-            </SectionHeader>
-            <AlertItem urgent>
-              <AlertIcon>
-                <FaExclamationCircle />
-              </AlertIcon>
-              <AlertContent>
-                <AlertTitle>Driver's License Renewal</AlertTitle>
-                <AlertInfo>Expires in 30 days</AlertInfo>
-              </AlertContent>
-              <RenewButton>Renew Now</RenewButton>
-            </AlertItem>
-          </RenewalAlerts>
-        </DashboardColumn>
-      </DashboardSecondaryGrid>
-
+          </SectionHeader>
+          {vehicles.some(v => v.registrationStatus === 'pending') ? (
+              vehicles
+                  .filter(v => v.registrationStatus === 'pending')
+                  .map(vehicle => (
+                      <AlertItem urgent key={vehicle._id}>
+                          <AlertIcon>
+                              <FaExclamationCircle />
+                          </AlertIcon>
+                          <AlertContent>
+                              <AlertTitle>{vehicle.make} {vehicle.model} Renewal</AlertTitle>
+                              <AlertInfo>Registration pending</AlertInfo>
+                          </AlertContent>
+                          <RenewButton>Renew Now</RenewButton>
+                      </AlertItem>
+                  ))
+          ) : (
+              <AlertItem>
+                  <AlertContent>
+                      <AlertInfo>No pending renewals</AlertInfo>
+                  </AlertContent>
+              </AlertItem>
+          )}
+        </RenewalAlerts>
+      </DashboardColumn>
+    </DashboardSecondaryGrid>
       <ScrollToTop show={showScrollButton} onClick={handleScrollTop}>
         {isCarIcon ? <FaCar /> : <FaArrowUp />}
       </ScrollToTop>
