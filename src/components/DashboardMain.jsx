@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import { API_URL } from '../config';
 import NewVehicleModal from './NewVehicleModal';
 import { FaCar, FaFile, FaClock, FaExclamationCircle, FaArrowUp, FaTruck, FaSearch, FaFilter } from 'react-icons/fa';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -53,11 +54,11 @@ function DashboardMain() {
             
             const token = localStorage.getItem('token');
             try {
-                const response = await fetch('http://localhost:5000/api/vehicles', {
-                    headers: {
-                        'x-auth-token': token
-                    }
-                });
+              const response = await fetch(`${API_URL}/api/vehicles`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
                 const data = await response.json();
                 setVehicles(data);
             } catch (error) {

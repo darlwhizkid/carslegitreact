@@ -1,8 +1,25 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { FaEnvelope, FaLock, FaUser, FaPhone, FaTimes, FaGoogle, FaFacebookF, FaEye, FaEyeSlash } from 'react-icons/fa';
-import { register, login } from '../services/api';
+import { FaEnvelope, FaLock, FaUser, FaPhone, FaTimes, FaGoogle, FaFacebookF, FaEye, FaEyeSlash, FaMapMarkerAlt } from 'react-icons/fa';
+import { API_URL } from '../config';
+
+const NIGERIAN_STATES = [
+  'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 
+  'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT (Abuja)', 
+  'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 
+  'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 
+  'Sokoto', 'Taraba', 'Yobe', 'Zamfara'
+];
+
+const REFERRAL_SOURCES = [
+  'Google Search',
+  'Social Media',
+  'Friend/Family',
+  'Advertisement',
+  'Blog/Article',
+  'Other'
+];
 
 const AuthModal = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
@@ -14,21 +31,85 @@ const AuthModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    password: ''
+    password: '',
+    confirmPassword: '',
+    phone: '',
+    state: '',
+    referralSource: '',
+    agreeToTerms: false
   });
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const validateForm = () => {
+    const errors = {};
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+
+    const phoneRegex = /^(\+234|0)[0-9]{10}$/;
+    if (!phoneRegex.test(formData.phone)) {
+      errors.phone = 'Please enter a valid Nigerian phone number';
+    }
+
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
+    if (!passwordRegex.test(formData.password)) {
+      errors.password = 'Password must be at least 8 characters with numbers and special characters';
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+
+    if (!formData.name.trim()) errors.name = 'Name is required';
+    if (!formData.state) errors.state = 'Please select your state';
+    if (!formData.referralSource) errors.referralSource = 'Please select how you heard about us';
+    if (!formData.agreeToTerms) errors.terms = 'Please agree to the terms and conditions';
+
+    return errors;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (activeTab === 'register') {
+      const validationErrors = validateForm();
+      if (Object.keys(validationErrors).length > 0) {
+        setFieldErrors(validationErrors);
+        return;
+      }
+    }
+    setFieldErrors({});
+
     try {
       const response = activeTab === 'login'
-        ? await login({ email: formData.email, password: formData.password })
-        : await register(formData);
+        ? await fetch(`${API_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+          })
+        : await fetch(`${API_URL}/api/auth/register`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+          });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message);
+      }
 
       localStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('currentUser', JSON.stringify(response.user));
-      localStorage.setItem('token', response.token);
-      
+      localStorage.setItem('currentUser', JSON.stringify(data.user));
+      localStorage.setItem('token', data.token);
+
       onClose();
       navigate('/dashboard');
     } catch (error) {
@@ -90,7 +171,7 @@ const AuthModal = ({ isOpen, onClose }) => {
           <ForgotPasswordForm />
         ) : activeTab === 'login' ? (
           <Form onSubmit={handleSubmit}>
-            <InputGroup>
+            <InputGroup error={fieldErrors.email}>
               <InputIcon>
                 <FaEnvelope />
               </InputIcon>
@@ -102,8 +183,9 @@ const AuthModal = ({ isOpen, onClose }) => {
                 onChange={handleChange}
                 required
               />
+              {fieldErrors.email && <InputError>{fieldErrors.email}</InputError>}
             </InputGroup>
-            <InputGroup>
+            <InputGroup error={fieldErrors.password}>
               <InputIcon>
                 <FaLock />
               </InputIcon>
@@ -121,6 +203,7 @@ const AuthModal = ({ isOpen, onClose }) => {
               >
                 {showLoginPassword ? <FaEyeSlash /> : <FaEye />}
               </PasswordToggle>
+              {fieldErrors.password && <InputError>{fieldErrors.password}</InputError>}
             </InputGroup>
             <RememberForgot>
               <label>
@@ -146,7 +229,7 @@ const AuthModal = ({ isOpen, onClose }) => {
           </Form>
         ) : (
           <Form onSubmit={handleSubmit}>
-            <InputGroup>
+            <InputGroup error={fieldErrors.name}>
               <InputIcon>
                 <FaUser />
               </InputIcon>
@@ -158,8 +241,9 @@ const AuthModal = ({ isOpen, onClose }) => {
                 onChange={handleChange}
                 required
               />
+              {fieldErrors.name && <InputError>{fieldErrors.name}</InputError>}
             </InputGroup>
-            <InputGroup>
+            <InputGroup error={fieldErrors.email}>
               <InputIcon>
                 <FaEnvelope />
               </InputIcon>
@@ -171,8 +255,9 @@ const AuthModal = ({ isOpen, onClose }) => {
                 onChange={handleChange}
                 required
               />
+              {fieldErrors.email && <InputError>{fieldErrors.email}</InputError>}
             </InputGroup>
-            <InputGroup>
+            <InputGroup error={fieldErrors.password}>
               <InputIcon>
                 <FaLock />
               </InputIcon>
@@ -190,8 +275,93 @@ const AuthModal = ({ isOpen, onClose }) => {
               >
                 {showRegisterPassword ? <FaEyeSlash /> : <FaEye />}
               </PasswordToggle>
+              {fieldErrors.password && <InputError>{fieldErrors.password}</InputError>}
             </InputGroup>
-            <SubmitButton type="submit">Register</SubmitButton>
+            <InputGroup error={fieldErrors.confirmPassword}>
+              <InputIcon>
+                <FaLock />
+              </InputIcon>
+              <Input 
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                placeholder="Confirm Password"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+              />
+              <PasswordToggle 
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+              </PasswordToggle>
+              {fieldErrors.confirmPassword && <InputError>{fieldErrors.confirmPassword}</InputError>}
+            </InputGroup>
+            <InputGroup error={fieldErrors.phone}>
+              <InputIcon>
+                <FaPhone />
+              </InputIcon>
+              <Input 
+                type="tel" 
+                name="phone"
+                placeholder="Phone Number"
+                value={formData.phone}
+                onChange={handleChange}
+                required
+              />
+              {fieldErrors.phone && <InputError>{fieldErrors.phone}</InputError>}
+            </InputGroup>
+            <InputGroup error={fieldErrors.state}>
+              <InputIcon>
+                <FaMapMarkerAlt />
+              </InputIcon>
+              <Select 
+                name="state"
+                value={formData.state}
+                onChange={handleChange}
+                required
+              >
+                <option value="">Select State</option>
+                {NIGERIAN_STATES.map(state => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </Select>
+              {fieldErrors.state && <InputError>{fieldErrors.state}</InputError>}
+            </InputGroup>
+            <InputGroup error={fieldErrors.referralSource}>
+              <InputIcon>
+                <FaUser />
+              </InputIcon>
+              <Select 
+                name="referralSource"
+                value={formData.referralSource}
+                onChange={handleChange}
+                required
+              >
+                <option value="">How did you hear about us?</option>
+                {REFERRAL_SOURCES.map(source => (
+                  <option key={source} value={source}>{source}</option>
+                ))}
+              </Select>
+              {fieldErrors.referralSource && <InputError>{fieldErrors.referralSource}</InputError>}
+            </InputGroup>
+            <TermsCheckbox>
+              <Checkbox 
+                type="checkbox" 
+                name="agreeToTerms"
+                checked={formData.agreeToTerms}
+                onChange={(e) => setFormData({...formData, agreeToTerms: e.target.checked})}
+                required
+              />
+              <span>I agree to the Terms and Conditions</span>
+              {fieldErrors.terms && <InputError>{fieldErrors.terms}</InputError>}
+            </TermsCheckbox>
+            <SubmitButton 
+              type="submit" 
+              disabled={!formData.agreeToTerms}
+            >
+              Register
+            </SubmitButton>
           </Form>
         )}
       </ModalContent>
@@ -220,10 +390,36 @@ const ModalContent = styled.div`
   max-width: 500px;
   position: relative;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  max-height: 90vh;
+  overflow-y: auto;
+  margin: 20px;
 
   @media (max-width: 600px) {
     padding: 20px;
-    margin: 20px;
+    margin: 10px;
+    max-height: 85vh;
+  }
+
+  /* Add smooth scrolling */
+  scroll-behavior: smooth;
+  
+  /* Style the scrollbar */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #555;
   }
 `;
 
@@ -289,6 +485,7 @@ const InputGroup = styled.div`
   position: relative;
   display: flex;
   align-items: center;
+  margin-bottom: 20px;
 `;
 
 const InputIcon = styled.div`
@@ -300,14 +497,33 @@ const InputIcon = styled.div`
 const Input = styled.input`
   width: 100%;
   padding: 12px 45px;
-  border: 1px solid #ddd;
+  border: 1px solid ${props => props.error ? '#dc3545' : '#ddd'};
   border-radius: 6px;
   font-size: 16px;
-  transition: border-color 0.3s ease;
+  transition: all 0.3s ease;
 
   &:focus {
     outline: none;
     border-color: #0066cc;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.1);
+  }
+`;
+
+const Select = styled.select`
+  width: 100%;
+  padding: 12px 45px;
+  border: 1px solid ${props => props.error ? '#dc3545' : '#ddd'};
+  border-radius: 6px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  appearance: none;
+  background: white;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: #0066cc;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.1);
   }
 `;
 
@@ -318,13 +534,6 @@ const PasswordToggle = styled.button`
   border: none;
   cursor: pointer;
   color: #666;
-  display: flex;
-  align-items: center;
-  padding: 0;
-  
-  &:hover {
-    color: #333;
-  }
 `;
 
 const RememberForgot = styled.div`
@@ -343,9 +552,8 @@ const ForgotPassword = styled.button`
   border: none;
   color: #0066cc;
   cursor: pointer;
-  padding: 0;
   font-size: inherit;
-  
+
   &:hover {
     text-decoration: underline;
   }
@@ -355,16 +563,9 @@ const BackToLogin = styled.button`
   background: none;
   border: none;
   color: #0066cc;
-  font-size: 14px;
   cursor: pointer;
-  padding: 10px 0;
-  text-align: center;
   width: 100%;
   margin-top: 10px;
-  
-  &:hover {
-    text-decoration: underline;
-  }
 `;
 
 const SubmitButton = styled.button`
@@ -376,10 +577,14 @@ const SubmitButton = styled.button`
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.3s ease;
 
   &:hover {
     background: #0052a3;
+  }
+
+  &:disabled {
+    background: #ccc;
+    cursor: not-allowed;
   }
 `;
 
@@ -398,19 +603,13 @@ const Divider = styled.div`
     background: #ddd;
   }
 
-  &::before {
-    left: 0;
-  }
-
-  &::after {
-    right: 0;
-  }
+  &::before { left: 0; }
+  &::after { right: 0; }
 
   span {
     background: white;
     padding: 0 10px;
     color: #666;
-    font-size: 14px;
   }
 `;
 
@@ -431,22 +630,38 @@ const SocialButton = styled.button`
   align-items: center;
   justify-content: center;
   gap: 10px;
-  transition: opacity 0.3s ease;
   color: white;
-  background: ${props => props.google ? '#DB4437' : props.facebook ? '#4267B2' : '#666'};
+  background: ${props => props.google ? '#DB4437' : '#4267B2'};
 
   &:hover {
     opacity: 0.9;
   }
 `;
 
+const TermsCheckbox = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #666;
+`;
+
 const ErrorMessage = styled.div`
-    color: #dc3545;
-    background: #ffe6e6;
-    padding: 0.5rem;
-    border-radius: 4px;
-    margin-bottom: 1rem;
-    text-align: center;
+  color: #dc3545;
+  background: #ffe6e6;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  text-align: center;
+`;
+
+const InputError = styled.span`
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 4px;
+  position: absolute;
+  bottom: -20px;
+  left: 0;
 `;
 
 export default AuthModal;
