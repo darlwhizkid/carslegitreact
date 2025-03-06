@@ -1,68 +1,172 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { FaCar, FaFileAlt, FaBell, FaCog, FaSignOutAlt } from 'react-icons/fa';
+import { fetchWithAuth } from '../utils/api';
+import { API_URL } from '../config';
 
-const DashboardSidebar = () => {
+const DashboardSidebar = ({ userData }) => {
+  const navigate = useNavigate();
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetchWithAuth(`${API_URL}/api/notifications`);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message);
+      }
+      
+      setNotifications(data);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate('/');
+  };
+
   return (
-    <Sidebar>
-      <SidebarHeader>
-        <h3>Dashboard Menu</h3>
-      </SidebarHeader>
-      <SidebarMenu>
-        <MenuItem>
-          <MenuLink to="#" className="active">Overview</MenuLink>
-        </MenuItem>
-        <MenuItem>
-          <MenuLink to="#">Add Vehicle</MenuLink>
-        </MenuItem>
-        <MenuItem>
-          <MenuLink to="#">Reports</MenuLink>
-        </MenuItem>
-        <MenuItem>
-          <MenuLink to="#">Settings</MenuLink>
-        </MenuItem>
-      </SidebarMenu>
-    </Sidebar>
+    <SidebarContainer>
+      <UserSection>
+        <UserAvatar>
+          {userData?.name?.charAt(0).toUpperCase()}
+        </UserAvatar>
+        <UserName>{userData?.name}</UserName>
+        <UserEmail>{userData?.email}</UserEmail>
+      </UserSection>
+
+      <NavSection>
+        <NavItem to="/dashboard">
+          <FaCar /> Vehicles
+        </NavItem>
+        <NavItem to="/dashboard/documents">
+          <FaFileAlt /> Documents
+        </NavItem>
+        <NavItem to="/dashboard/notifications">
+          <FaBell /> 
+          Notifications
+          {notifications.length > 0 && (
+            <NotificationBadge>{notifications.length}</NotificationBadge>
+          )}
+        </NavItem>
+        <NavItem to="/dashboard/settings">
+          <FaCog /> Settings
+        </NavItem>
+      </NavSection>
+
+      <LogoutButton onClick={handleLogout}>
+        <FaSignOutAlt /> Logout
+      </LogoutButton>
+    </SidebarContainer>
   );
 };
 
-const Sidebar = styled.aside`
+const SidebarContainer = styled.div`
   width: 250px;
-  background-color: #fff;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-  padding: 20px 0;
+  background: white;
+  border-right: 1px solid #eee;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
 `;
 
-const SidebarHeader = styled.div`
-  padding: 0 20px 20px;
+const UserSection = styled.div`
+  text-align: center;
+  padding-bottom: 20px;
   border-bottom: 1px solid #eee;
-  
-  h3 {
-    color: #333;
-    font-size: 1.2rem;
+`;
+
+const UserAvatar = styled.div`
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #0066cc;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin: 0 auto 10px;
+`;
+
+const UserName = styled.h3`
+  margin: 0;
+  color: #333;
+`;
+
+const UserEmail = styled.p`
+  margin: 5px 0 0;
+  color: #666;
+  font-size: 14px;
+`;
+
+const NavSection = styled.div`
+  margin-top: 20px;
+  flex: 1;
+`;
+
+const NavItem = styled(Link)`
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  color: #333;
+  text-decoration: none;
+  border-radius: 6px;
+  margin-bottom: 5px;
+  position: relative;
+
+  svg {
+    margin-right: 10px;
+  }
+
+  &:hover {
+    background: #f5f6fa;
+  }
+
+  &.active {
+    background: #f5f6fa;
+    color: #0066cc;
   }
 `;
 
-const SidebarMenu = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 0;
+const NotificationBadge = styled.span`
+  background: #ff4444;
+  color: white;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  position: absolute;
+  right: 10px;
 `;
 
-const MenuItem = styled.li``;
+const LogoutButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 12px;
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  color: #666;
+  cursor: pointer;
+  font-size: 16px;
 
-const MenuLink = styled(Link)`
-  display: block;
-  padding: 15px 20px;
-  color: #555;
-  text-decoration: none;
-  transition: all 0.3s ease;
+  svg {
+    margin-right: 10px;
+  }
 
-  &:hover,
-  &.active {
-    background-color: #f8f9fa;
-    color: #007bff;
-    border-left: 4px solid #007bff;
+  &:hover {
+    background: #f5f6fa;
+    color: #d93025;
   }
 `;
 

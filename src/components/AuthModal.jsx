@@ -99,17 +99,18 @@ const AuthModal = ({ isOpen, onClose }) => {
             },
             body: JSON.stringify(formData)
           });
+            const data = await response.json();
 
-      const data = await response.json();
+            if (!response.ok) {
+              throw new Error(data.message);
+            }
 
-      if (!response.ok) {
-        throw new Error(data.message);
-      }
+            // Add console.log to verify data
+            console.log('Auth success:', data);
 
-      localStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('currentUser', JSON.stringify(data.user));
-      localStorage.setItem('token', data.token);
-
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('isAuthenticated', 'true');
+            localStorage.setItem('currentUser', JSON.stringify(data.user));
       onClose();
       navigate('/dashboard');
     } catch (error) {

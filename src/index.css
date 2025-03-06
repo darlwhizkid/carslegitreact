@@ -21,3 +21,7 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+:root {
+  --navbar-height: 80px; /* Adjust this to match your navbar's actual height */
+}
