@@ -20,8 +20,8 @@ import { API_URL } from '../config';
     return (
       <MainContainer>
         <WelcomeSection>
-          <h1>{isNewUser() ? `Welcome, ${userData?.name}!` : `Welcome back, ${userData?.name}`}</h1>
-          <p>{isNewUser() ? 'Start by registering your first vehicle' : 'Track your vehicle registration progress'}</p>
+          <h1>Welcome {userData?.name}!</h1>
+          <p>Start managing your vehicle registrations</p>
         </WelcomeSection>
 
         <StatsGrid>
