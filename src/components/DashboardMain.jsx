@@ -3,82 +3,66 @@ import styled from 'styled-components';
 import { FaCar, FaFileUpload, FaCheckCircle, FaClock } from 'react-icons/fa';
 import { fetchWithAuth } from '../utils/api';
 import { API_URL } from '../config';
+  const DashboardMain = ({ userData }) => {
+    const [applications, setApplications] = useState([]);
+    const [vehicles, setVehicles] = useState([]);
+    const [activeTab, setActiveTab] = useState('overview');
 
-const DashboardMain = ({ userData }) => {
-  const [applications, setApplications] = useState([]);
-  const [vehicles, setVehicles] = useState([]);
-  const [activeTab, setActiveTab] = useState('overview');
+    // Determine if user is new based on registration date
+    const isNewUser = () => {
+      const userCreationDate = new Date(userData?.createdAt);
+      const currentDate = new Date();
+      const diffTime = Math.abs(currentDate - userCreationDate);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays < 1;
+    };
 
-  const progressSteps = [
-    { id: 1, title: 'Registration', completed: true },
-    { id: 2, title: 'Document Upload', completed: true },
-    { id: 3, title: 'Verification', completed: false },
-    { id: 4, title: 'Approval', completed: false }
-  ];
+    return (
+      <MainContainer>
+        <WelcomeSection>
+          <h1>{isNewUser() ? `Welcome, ${userData?.name}!` : `Welcome back, ${userData?.name}`}</h1>
+          <p>{isNewUser() ? 'Start by registering your first vehicle' : 'Track your vehicle registration progress'}</p>
+        </WelcomeSection>
 
-  return (
-    <MainContainer>
-      <WelcomeSection>
-        <h1>Welcome back, {userData?.name}</h1>
-        <p>Track your vehicle registration progress</p>
-      </WelcomeSection>
+        <StatsGrid>
+          <StatCard>
+            <StatIcon><FaCar /></StatIcon>
+            <StatInfo>
+              <StatValue>0</StatValue>
+              <StatLabel>Registered Vehicles</StatLabel>
+            </StatInfo>
+          </StatCard>
+          <StatCard>
+            <StatIcon><FaFileUpload /></StatIcon>
+            <StatInfo>
+              <StatValue>0</StatValue>
+              <StatLabel>Documents Uploaded</StatLabel>
+            </StatInfo>
+          </StatCard>
+          <StatCard>
+            <StatIcon><FaClock /></StatIcon>
+            <StatInfo>
+              <StatValue>0</StatValue>
+              <StatLabel>Pending Verifications</StatLabel>
+            </StatInfo>
+          </StatCard>
+        </StatsGrid>
 
-      <ProgressTracker>
-        <h2>Application Progress</h2>
-        <StepsContainer>
-          {progressSteps.map((step, index) => (
-            <Step key={step.id} completed={step.completed}>
-              <StepNumber completed={step.completed}>
-                {step.completed ? <FaCheckCircle /> : step.id}
-              </StepNumber>
-              <StepTitle>{step.title}</StepTitle>
-              {index < progressSteps.length - 1 && <StepConnector completed={step.completed} />}
-            </Step>
-          ))}
-        </StepsContainer>
-      </ProgressTracker>
-
-      <StatsGrid>
-        <StatCard>
-          <StatIcon><FaCar /></StatIcon>
-          <StatInfo>
-            <StatValue>2</StatValue>
-            <StatLabel>Registered Vehicles</StatLabel>
-          </StatInfo>
-        </StatCard>
-        <StatCard>
-          <StatIcon><FaFileUpload /></StatIcon>
-          <StatInfo>
-            <StatValue>5</StatValue>
-            <StatLabel>Documents Uploaded</StatLabel>
-          </StatInfo>
-        </StatCard>
-        <StatCard>
-          <StatIcon><FaClock /></StatIcon>
-          <StatInfo>
-            <StatValue>2</StatValue>
-            <StatLabel>Pending Verifications</StatLabel>
-          </StatInfo>
-        </StatCard>
-      </StatsGrid>
-
-      <RecentActivity>
-        <h2>Recent Activity</h2>
-        <ActivityList>
-          <ActivityItem>
-            <ActivityIcon status="success"><FaCheckCircle /></ActivityIcon>
-            <ActivityContent>
-              <ActivityTitle>Document Verified</ActivityTitle>
-              <ActivityTime>2 hours ago</ActivityTime>
-            </ActivityContent>
-          </ActivityItem>
-          {/* Add more activity items */}
-        </ActivityList>
-      </RecentActivity>
-    </MainContainer>
-  );
-};
-
+        <RecentActivity>
+          <h2>Getting Started</h2>
+          <ActivityList>
+            <ActivityItem>
+              <ActivityIcon status="pending"><FaCar /></ActivityIcon>
+              <ActivityContent>
+                <ActivityTitle>Register your first vehicle</ActivityTitle>
+                <ActivityTime>Click the "Add Vehicle" button to begin</ActivityTime>
+              </ActivityContent>
+            </ActivityItem>
+          </ActivityList>
+        </RecentActivity>
+      </MainContainer>
+    );
+  };
 const MainContainer = styled.main`
   flex: 1;
   padding: 30px;
